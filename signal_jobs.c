@@ -21,11 +21,11 @@ int main(int argc, char const *argv[])
 		}
 		else if(pid == 0)
 		{
-			if(strcmp(command,"jobs") == 0)
+			if(strcmp(command,"jobs\n") == 0)
 			{
 				printf("backgorund jobs will be displayed here");
 			}
-			else if(strcmp(command,"start") == 0)
+			else if(strcmp(command,"start\n") == 0)
 			{
 				printf("start");
 			}
