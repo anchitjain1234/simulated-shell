@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+int pid_counter = 0;
 int checkampersand(char *command)
 {
 	int i;
@@ -30,6 +30,7 @@ int checkampersand(char *command)
 
 int main(int argc, char const *argv[])
 {
+	int pids[100];
 	while(1)
 	{
 		char command[100];
@@ -38,6 +39,11 @@ int main(int argc, char const *argv[])
 
 		printf("Enter command :");
 		fgets(command,sizeof command,stdin);
+
+		char *pos;
+		if ((pos=strchr(command, '\n')) != NULL)
+    		*pos = '\0';
+
 		int check = checkampersand(command);
 		pid=fork();
 		if(pid==-1)
@@ -46,11 +52,14 @@ int main(int argc, char const *argv[])
 		}
 		else if(pid == 0)
 		{
-			if(strcmp(command,"jobs\n") == 0)
+			if(strcmp(command,"jobs") == 0)
 			{
-				printf("backgorund jobs will be displayed here");
+				for (i = 0; i < pid_counter; ++i)
+				{
+					printf("%d\n",pids[i]);
+				}
 			}
-			else if(strcmp(command,"start\n") == 0)
+			else if(strcmp(command,"start") == 0)
 			{
 				printf("start");
 			}
@@ -62,9 +71,15 @@ int main(int argc, char const *argv[])
 		}
 		else
 		{
+			//Not wait for child to exit if ampersand is appended in last.
 			if(!check)
 			{
 				waitpid(pid,&status,0);
+			}
+			else
+			{
+				pids[pid_counter]=pid;
+				pid_counter++;
 			}
 			continue;
 		}
