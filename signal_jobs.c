@@ -8,7 +8,8 @@
 
 // To keep track of length ofprocesses data structure.
 int pid_counter = -1;
-
+pid_t globalpid;
+pid_t globalpgid;
 typedef struct pidst{
 	pid_t pid;
 	int dead;
@@ -41,6 +42,7 @@ void quithandler(int sig)
 //SIGINT handler
 void inthandler(int sig)
 {
+	printf("int handler\n");
 	int i;
 
 	for(i=0;i<=pid_counter;i++)
@@ -57,7 +59,8 @@ void inthandler(int sig)
 void tstphandler(int sig)
 {
 	int i;
-
+	printf("YO in tstp\n");
+	printf("fg group is %d\n", tcgetpgrp(0));
 	for(i=0;i<=pid_counter;i++)
 	  	{
 	  		if(processes[i].dead==-1)
@@ -68,7 +71,12 @@ void tstphandler(int sig)
 	  		}
 	  	}
 	  	//To direct the code as if main is not called program hangs as it does not know where to go.
-	  	main();
+	  	// signal(SIGTSTP,tstphandler);
+	  	// main();
+	  	// return;
+	  	tcsetpgrp(STDOUT_FILENO,globalpgid);
+		tcsetpgrp(STDIN_FILENO,globalpgid);
+	  	printf("fg group is %d\n", tcgetpgrp(0));
 }
 
 //SIGCHLD handler
@@ -131,12 +139,17 @@ int cmd(char *command)
 
 int main(int argc, char const *argv[])
 {
+	globalpid=getpid();
+	setpgid(globalpid,globalpid);
+	globalpgid=getpgid(globalpid);
+	setsid();
+	printf("sid is %d\n",getsid(globalpgid));
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, sigchldhandler);
 	signal(SIGQUIT,quithandler);
 	while(1)
 	{
-		signal(SIGTSTP, SIG_IGN);
+		signal(SIGTSTP, tstphandler);
 		signal(SIGINT,SIG_IGN);
 		char command[100];
 		int i,status;
@@ -157,7 +170,7 @@ int main(int argc, char const *argv[])
     			{
     				int status;
     				int wst=waitpid(processes[i].pid,&status,WNOHANG);
-    				printf("wst =%d for pid =%d\n", wst,processes[i].pid);
+    				// printf("wst =%d for pid =%d\n", wst,processes[i].pid);
     				if(wst!=0)
     				{
     					processes[i].dead=1;
@@ -250,16 +263,25 @@ int main(int argc, char const *argv[])
 			}
 			else if(pid == 0)
 			{
-				signal(SIGTSTP, SIG_DFL);
-				signal(SIGINT,inthandler);
+				signal(SIGTTOU, SIG_IGN);
+				printf("fg group is %d\n", tcgetpgrp(0));
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				setpgid(getpid(),getpid());
+				if(!check)
+				{
+					tcsetpgrp(STDOUT_FILENO,getpgid(getpid()));
+					// tcsetpgrp(STDIN_FILENO,getpgid(getpid()));
+				}
+				signal(SIGTSTP, SIG_DFL);
+				signal(SIGINT,inthandler);
+				printf("sid is %d\n",getsid(getpgid(getpid())));
 				// 
 				// pid = getpid();
 	  			// setpgid(pid, pid);
 	  			// tcsetpgrp(0,getpgid(0));
 				// signal(SIGTSTP, tstphandler);
 				// printf("pid=%d\n",getpid() );
+				printf("fg group is %d and %d\n", tcgetpgrp(0),tcgetpgrp(1));
 				if(strlen(token)>0)
 				{
 					execer=execlp(token,token,args,(char*)NULL);
@@ -273,8 +295,8 @@ int main(int argc, char const *argv[])
 			}
 			else
 			{
-				signal(SIGTSTP, tstphandler);
-				signal(SIGINT,inthandler);
+				// signal(SIGTSTP, tstphandler);
+				// signal(SIGINT,inthandler);
 				// tcsetpgrp(0,getpid());
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				// setpgid(pid, pid);
@@ -288,6 +310,9 @@ int main(int argc, char const *argv[])
 					processes[pid_counter].pid=pid;
 					processes[pid_counter].dead=-1;
 					waitpid(pid,&status,0);
+					tcsetpgrp(STDOUT_FILENO,globalpgid);
+					tcsetpgrp(STDIN_FILENO,globalpgid);
+					printf("fg group is %d\n", tcgetpgrp(0));
 					processes[pid_counter].dead=1;
 				}
 				continue;
