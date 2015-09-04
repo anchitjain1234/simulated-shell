@@ -48,7 +48,7 @@ void inthandler(int sig)
 	  		// printf("pid = %d , dead = %d\n",processes[i].pid,processes[i].dead );
 	  		if(processes[i].dead==-1)
 	  		{
-	  			kill(processes[i].pid,SIGINT);
+	  			kill(processes[i].pid,SIGKILL);
 	  			break;
 	  		}
 	  	}
@@ -59,13 +59,19 @@ void tstphandler(int sig)
 	// printf("yo\n");
 	pid_t pid;
 	int i;
-
+	// pid = wait(NULL);
+	// printf("In sigtstp pid=%d\n",pid );
 	for(i=0;i<=pid_counter;i++)
 	  	{
+	  		printf("pid=%d dead=%d\n",processes[i].pid,processes[i].dead);
 	  		// printf("pid = %d , dead = %d\n",processes[i].pid,processes[i].dead );
 	  		if(processes[i].dead==-1)
 	  		{
-	  			kill(processes[i].pid,SIGTSTP);
+	  			processes[i].dead=2;
+	  			kill(processes[i].pid,SIGSTOP);
+	  			// kill();
+	  			tcsetpgrp(0,getpid());
+	  			// kill(,SIGKILL);
 	  			break;
 	  		}
 	  	}
@@ -75,19 +81,31 @@ void sigchldhandler(int sig)
 {
 	pid_t pid;
 	int i;
-  	pid = wait(NULL);
-
-  	if(pid != -1)
-  	{
-  		for(i=0;i<=pid_counter;i++)
-	  	{
-	  		if(processes[i].pid==pid)
-	  		{
-	  			processes[i].dead=1;
-	  			break;
-	  		}
-	  	}
-  	}
+  	// pid = wait(NULL);
+  	for(i=0;i<=pid_counter;i++)
+	{
+		if(processes[i].dead!=1)
+		{
+			int status;
+			int wst=waitpid(processes[i].pid,&status,WNOHANG);
+			// printf("wst =%d for pid =%d\n", wst,processes[i].pid);
+			if(wst!=0)
+			{
+				processes[i].dead=1;
+			}
+		}
+	}
+  	// if(pid != -1)
+  	// {
+  	// 	for(i=0;i<=pid_counter;i++)
+	  // 	{
+	  // 		if(processes[i].pid==pid)
+	  // 		{
+	  // 			processes[i].dead=1;
+	  // 			break;
+	  // 		}
+	  // 	}
+  	// }
 
   	// printf("Pid %d exited.\n", pid);
 }
@@ -132,6 +150,7 @@ int cmd(char *command)
 
 int main(int argc, char const *argv[])
 {
+	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, sigchldhandler);
 	signal(SIGTSTP, tstphandler);
 	signal(SIGINT,inthandler);
@@ -208,10 +227,9 @@ int main(int argc, char const *argv[])
     	{
     		int check = checkampersand(command),nooftokens=0;
 			int tok=cmd(command),lentok=strlen(command)-tok;
-
+			pid_counter+=1;
 			if(check)
 			{
-				pid_counter+=1;
 				lentok-=2;
 			}
 
@@ -230,7 +248,7 @@ int main(int argc, char const *argv[])
 			strcpy(pathfin,pathini);
 			strcat(pathfin,token);
 			int execer;
-			pid=vfork();
+			pid=fork();
 			if(pid==-1)
 			{
 				perror("Error in forking");
@@ -238,14 +256,16 @@ int main(int argc, char const *argv[])
 			else if(pid == 0)
 			{
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
-				setpgid(0, 0);
+				setpgid(getpid(),getpid());
+				// 
 				// pid = getpid();
 	  			// setpgid(pid, pid);
+	  			// tcsetpgrp(0,getpgid(0));
 				// signal(SIGTSTP, tstphandler);
 				// printf("pid=%d\n",getpid() );
 				if(strlen(token)>0)
 				{
-					execer=execlp("sh","sh","-c",token,args,(char*)NULL);
+					execer=execlp(token,token,args,(char*)NULL);
 					if (execer==-1)
 					{
 						printf("Error in execution.Command = %s and args =%s\n",token,args );
@@ -256,6 +276,7 @@ int main(int argc, char const *argv[])
 			}
 			else
 			{
+				// tcsetpgrp(0,getpid());
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				// setpgid(pid, pid);
 				if(check)
