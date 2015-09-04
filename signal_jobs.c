@@ -22,6 +22,17 @@ pidstore processes[100];
 
 void quithandler(int sig)
 {
+	printf("Killing all processes\n");
+	pid_t pid;
+	int i;
+	for(i=0;i<=pid_counter;i++)
+	{
+		if(processes[i].dead!=1)
+	  		{
+	  			kill(processes[i].pid,SIGKILL);
+	  			// break;
+	  		}
+	}
 	printf("Type quit to quit program.\n");
 }
 
@@ -203,7 +214,7 @@ int main(int argc, char const *argv[])
 				lentok-=2;
 			}
 
-			char *token=(char *)malloc(sizeof(char)*tok);
+			char *token=(char *)malloc(tok*sizeof(char));
 			for(i=0;i<tok-1;i++)
 			{
 				token[i]=command[i];
@@ -217,6 +228,7 @@ int main(int argc, char const *argv[])
 			// char *pathfin=malloc(sizeof(pathini)+sizeof(token)+1);
 			// strcpy(pathfin,pathini);
 			// strcat(pathfin,token);
+			int execer;
 			pid=vfork();
 			if(pid==-1)
 			{
@@ -230,9 +242,16 @@ int main(int argc, char const *argv[])
 	  			// setpgid(pid, pid);
 				// signal(SIGTSTP, tstphandler);
 				// printf("pid=%d\n",getpid() );
-				int execer=execlp(token,token,args,(char*)NULL);
-				if (execer==-1)
+				if(strlen(token)>0)
+				{
+					execer=execlp(token,token,args,(char*)NULL);
+					if (execer==-1)
+					{
+						printf("Error in execution.Command = %s and args =%s\n",token,args );
+					}
 					exit(0);
+				}
+				
 			}
 			else
 			{
@@ -243,10 +262,11 @@ int main(int argc, char const *argv[])
 					processes[pid_counter].pid=pid;
 					processes[pid_counter].dead=0;
 				}
-				if(!check)
+				if(!check && strlen(token)>0 && execer>=0)
 				{
 					processes[pid_counter].pid=pid;
 					processes[pid_counter].dead=-1;
+					printf("Waiting for pid=%d\n",pid );
 					waitpid(pid,&status,0);
 					processes[pid_counter].dead=1;
 				}
