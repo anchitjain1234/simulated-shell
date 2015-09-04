@@ -29,6 +29,7 @@ void quithandler(int sig)
 	{
 		if(processes[i].dead!=1)
 	  		{
+	  			printf("Killing %d\n",processes[i].pid);
 	  			kill(processes[i].pid,SIGKILL);
 	  			// break;
 	  		}
@@ -138,12 +139,12 @@ int main(int argc, char const *argv[])
 	while(1)
 	{
 		// printf("pid=%d\n",getpid() );
-		sigset_t	newmask, oldmask, pendmask;
-		sigemptyset(&newmask);
-		sigaddset(&newmask, SIGINT);
-		sigaddset(&newmask, SIGQUIT);
-		sigaddset(&newmask, SIGTSTP);
-		sigprocmask(SIG_UNBLOCK, &newmask, NULL);
+		// sigset_t	newmask, oldmask, pendmask;
+		// sigemptyset(&newmask);
+		// sigaddset(&newmask, SIGINT);
+		// sigaddset(&newmask, SIGQUIT);
+		// sigaddset(&newmask, SIGTSTP);
+		// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 		char command[100];
 		int i,j,status;
 		pid_t pid;
@@ -224,10 +225,10 @@ int main(int argc, char const *argv[])
 			{
 				args[i]=command[tok+i];
 			}
-			// char *pathini="/bin/";
-			// char *pathfin=malloc(sizeof(pathini)+sizeof(token)+1);
-			// strcpy(pathfin,pathini);
-			// strcat(pathfin,token);
+			char *pathini="/bin/";
+			char *pathfin=malloc(sizeof(pathini)+sizeof(token)+1);
+			strcpy(pathfin,pathini);
+			strcat(pathfin,token);
 			int execer;
 			pid=vfork();
 			if(pid==-1)
@@ -236,7 +237,7 @@ int main(int argc, char const *argv[])
 			}
 			else if(pid == 0)
 			{
-				sigprocmask(SIG_UNBLOCK, &newmask, NULL);
+				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				setpgid(0, 0);
 				// pid = getpid();
 	  			// setpgid(pid, pid);
@@ -244,7 +245,7 @@ int main(int argc, char const *argv[])
 				// printf("pid=%d\n",getpid() );
 				if(strlen(token)>0)
 				{
-					execer=execlp(token,token,args,(char*)NULL);
+					execer=execlp("sh","sh","-c",token,args,(char*)NULL);
 					if (execer==-1)
 					{
 						printf("Error in execution.Command = %s and args =%s\n",token,args );
@@ -255,14 +256,14 @@ int main(int argc, char const *argv[])
 			}
 			else
 			{
-				sigprocmask(SIG_UNBLOCK, &newmask, NULL);
+				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				// setpgid(pid, pid);
 				if(check)
 				{
 					processes[pid_counter].pid=pid;
 					processes[pid_counter].dead=0;
 				}
-				if(!check && strlen(token)>0 && execer>=0)
+				if(!check && strlen(token)>0)
 				{
 					processes[pid_counter].pid=pid;
 					processes[pid_counter].dead=-1;
