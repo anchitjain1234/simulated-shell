@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+// To keep track of length ofprocesses data structure.
 int pid_counter = -1;
 
 typedef struct pidst{
@@ -18,12 +19,13 @@ typedef struct pidst{
 	dead = -1 Process is in foreground
 	*/
 }pidstore;
+
 pidstore processes[100];
 
+//SIGQUIT handler
 void quithandler(int sig)
 {
 	printf("Killing all processes\n");
-	pid_t pid;
 	int i;
 	for(i=0;i<=pid_counter;i++)
 	{
@@ -31,21 +33,18 @@ void quithandler(int sig)
 	  		{
 	  			printf("Killing %d\n",processes[i].pid);
 	  			kill(processes[i].pid,SIGKILL);
-	  			// break;
 	  		}
 	}
 	printf("Type quit to quit program.\n");
 }
 
+//SIGINT handler
 void inthandler(int sig)
 {
-	// printf("INT caught");
-	pid_t pid;
 	int i;
 
 	for(i=0;i<=pid_counter;i++)
 	  	{
-	  		// printf("pid = %d , dead = %d\n",processes[i].pid,processes[i].dead );
 	  		if(processes[i].dead==-1)
 	  		{
 	  			kill(processes[i].pid,SIGKILL);
@@ -54,62 +53,43 @@ void inthandler(int sig)
 	  	}
 }
 
+//SIGTSTP handler
 void tstphandler(int sig)
 {
-	// printf("yo\n");
-	pid_t pid;
 	int i;
-	// pid = wait(NULL);
-	// printf("In sigtstp pid=%d\n",pid );
+
 	for(i=0;i<=pid_counter;i++)
 	  	{
-	  		printf("pid=%d dead=%d\n",processes[i].pid,processes[i].dead);
-	  		// printf("pid = %d , dead = %d\n",processes[i].pid,processes[i].dead );
 	  		if(processes[i].dead==-1)
 	  		{
 	  			processes[i].dead=2;
-	  			kill(processes[i].pid,SIGSTOP);
-	  			// kill();
-	  			tcsetpgrp(0,getpid());
-	  			// kill(,SIGKILL);
+	  			kill(processes[i].pid, SIGSTOP);
 	  			break;
 	  		}
 	  	}
+	  	//To direct the code as if main is not called program hangs as it does not know where to go.
+	  	main();
 }
 
+//SIGCHLD handler
 void sigchldhandler(int sig)
 {
-	pid_t pid;
 	int i;
-  	// pid = wait(NULL);
   	for(i=0;i<=pid_counter;i++)
 	{
 		if(processes[i].dead!=1)
 		{
 			int status;
 			int wst=waitpid(processes[i].pid,&status,WNOHANG);
-			// printf("wst =%d for pid =%d\n", wst,processes[i].pid);
 			if(wst!=0)
 			{
 				processes[i].dead=1;
 			}
 		}
 	}
-  	// if(pid != -1)
-  	// {
-  	// 	for(i=0;i<=pid_counter;i++)
-	  // 	{
-	  // 		if(processes[i].pid==pid)
-	  // 		{
-	  // 			processes[i].dead=1;
-	  // 			break;
-	  // 		}
-	  // 	}
-  	// }
-
-  	// printf("Pid %d exited.\n", pid);
 }
 
+//To check if ampersand is present in back of entered command or not.
 int checkampersand(char *command)
 {
 	int i;
@@ -135,6 +115,7 @@ int checkampersand(char *command)
 	return 0;
 }
 
+//To check first space in entered command to seperate arguments from main command.
 int cmd(char *command)
 {
 	int i;
@@ -152,20 +133,13 @@ int main(int argc, char const *argv[])
 {
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, sigchldhandler);
-	signal(SIGTSTP, tstphandler);
-	signal(SIGINT,inthandler);
 	signal(SIGQUIT,quithandler);
 	while(1)
 	{
-		// printf("pid=%d\n",getpid() );
-		// sigset_t	newmask, oldmask, pendmask;
-		// sigemptyset(&newmask);
-		// sigaddset(&newmask, SIGINT);
-		// sigaddset(&newmask, SIGQUIT);
-		// sigaddset(&newmask, SIGTSTP);
-		// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
+		signal(SIGTSTP, SIG_IGN);
+		signal(SIGINT,SIG_IGN);
 		char command[100];
-		int i,j,status;
+		int i,status;
 		pid_t pid;
 
 		printf("Enter command :");
@@ -190,7 +164,14 @@ int main(int argc, char const *argv[])
     				}
     				else
     				{
-    					printf("%d\n", processes[i].pid);
+    					if(processes[i].dead == 0)
+    					{
+    						printf("%d  Running\n", processes[i].pid);
+    					}
+    					else if(processes[i].dead == 2)
+    					{
+    						printf("%d  Stopped\n", processes[i].pid);
+    					}
     				}
     				
     			}
@@ -206,6 +187,13 @@ int main(int argc, char const *argv[])
     			pid_entered[i]=command[6+i];
     		}
     		int pidint=atoi(pid_entered);
+    		for(i=0;i<=pid_counter;i++)
+			{
+				if(processes[i].pid==pidint)
+				{
+					processes[i].dead = 0;
+				}
+			}
     		kill(pidint,SIGCONT);
     	}
     	else if(strlen(command)>5 && strncmp(command,"stop",4) == 0)
@@ -217,6 +205,13 @@ int main(int argc, char const *argv[])
     			pid_entered[i]=command[5+i];
     		}
     		int pidint=atoi(pid_entered);
+    		for(i=0;i<=pid_counter;i++)
+			{
+				if(processes[i].pid==pidint)
+				{
+					processes[i].dead = 2;
+				}
+			}
     		kill(pidint,SIGSTOP);
     	}
     	else if(strcmp(command,"quit")==0)
@@ -225,7 +220,7 @@ int main(int argc, char const *argv[])
     	}
     	else if(strlen(command)>0 && command!=" ")
     	{
-    		int check = checkampersand(command),nooftokens=0;
+    		int check = checkampersand(command);
 			int tok=cmd(command),lentok=strlen(command)-tok;
 			pid_counter+=1;
 			if(check)
@@ -243,10 +238,10 @@ int main(int argc, char const *argv[])
 			{
 				args[i]=command[tok+i];
 			}
-			char *pathini="/bin/";
-			char *pathfin=malloc(sizeof(pathini)+sizeof(token)+1);
-			strcpy(pathfin,pathini);
-			strcat(pathfin,token);
+			// char *pathini="/bin/";
+			// char *pathfin=malloc(sizeof(pathini)+sizeof(token)+1);
+			// strcpy(pathfin,pathini);
+			// strcat(pathfin,token);
 			int execer;
 			pid=fork();
 			if(pid==-1)
@@ -255,6 +250,8 @@ int main(int argc, char const *argv[])
 			}
 			else if(pid == 0)
 			{
+				signal(SIGTSTP, SIG_DFL);
+				signal(SIGINT,inthandler);
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				setpgid(getpid(),getpid());
 				// 
@@ -276,17 +273,21 @@ int main(int argc, char const *argv[])
 			}
 			else
 			{
+				signal(SIGTSTP, tstphandler);
+				signal(SIGINT,inthandler);
 				// tcsetpgrp(0,getpid());
 				// sigprocmask(SIG_UNBLOCK, &newmask, NULL);
 				// setpgid(pid, pid);
 				if(check)
 				{
 					processes[pid_counter].pid=pid;
+					// processes[pid_counter].ppid=getpid();
 					processes[pid_counter].dead=0;
 				}
 				if(!check && strlen(token)>0)
 				{
 					processes[pid_counter].pid=pid;
+					// processes[pid_counter].ppid=getpid();
 					processes[pid_counter].dead=-1;
 					printf("Waiting for pid=%d\n",pid );
 					waitpid(pid,&status,0);
