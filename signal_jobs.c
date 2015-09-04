@@ -281,20 +281,16 @@ int main(int argc, char const *argv[])
 				if(check)
 				{
 					processes[pid_counter].pid=pid;
-					// processes[pid_counter].ppid=getpid();
 					processes[pid_counter].dead=0;
 				}
 				if(!check && strlen(token)>0)
 				{
 					processes[pid_counter].pid=pid;
-					// processes[pid_counter].ppid=getpid();
 					processes[pid_counter].dead=-1;
-					printf("Waiting for pid=%d\n",pid );
 					waitpid(pid,&status,0);
 					processes[pid_counter].dead=1;
 				}
 				continue;
-				// continue;
 			}
     	}
 		
