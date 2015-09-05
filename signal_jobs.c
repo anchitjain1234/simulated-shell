@@ -142,6 +142,12 @@ int main(int argc, char const *argv[])
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, sigchldhandler);
 	signal(SIGQUIT,quithandler);
+	printf("\n\nUsage :-\n");
+	printf("jobs :- List background jobs\n");
+	printf("start pid :- Start job with pid\n");
+	printf("stop pid :- Stop job with pid\n");
+	printf("quit :- Quit the program\n");
+	printf("Ctrl + \\ :- Kill all processes\n\n");
 	while(1)
 	{
 		signal(SIGTSTP, SIG_IGN);
@@ -165,7 +171,6 @@ int main(int argc, char const *argv[])
     			{
     				int status;
     				int wst=waitpid(processes[i].pid,&status,WNOHANG);
-    				printf("wst =%d for pid =%d\n", wst,processes[i].pid);
     				if(wst!=0)
     				{
     					processes[i].dead=1;
@@ -202,7 +207,14 @@ int main(int argc, char const *argv[])
 					processes[i].dead = 0;
 				}
 			}
-    		kill(pidint,SIGCONT);
+    		if(kill(pidint,SIGCONT)==0)
+    		{
+    			printf ("\n%d RUNNING\n",pidint);
+    		}
+    		else
+    		{
+    			printf("Error in RUNNING %d\n",pidint );
+    		}
     	}
     	else if(strlen(command)>5 && strncmp(command,"stop",4) == 0)
     	{
@@ -220,7 +232,14 @@ int main(int argc, char const *argv[])
 					processes[i].dead = 2;
 				}
 			}
-    		kill(pidint,SIGSTOP);
+    		if(kill(pidint,SIGSTOP)==0)
+    		{
+    			printf ("\n%d STOPPED\n",pidint);
+    		}
+    		else
+    		{
+    			printf("\nError in STOPPING %d\n",pidint);
+    		}
     	}
     	else if(strcmp(command,"quit")==0)
     	{
