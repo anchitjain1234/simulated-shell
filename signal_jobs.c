@@ -60,6 +60,8 @@ void inthandler(int sig)
 //SIGTSTP handler
 void tstphandler(int sig)
 {
+	//This handler is not being called inside the child instead the default implementation is being called.
+	//But if we do not make child process as foreground process group than this handler is being called.
 	int i;
 
 	for(i=0;i<=pid_counter;i++)
@@ -73,6 +75,10 @@ void tstphandler(int sig)
 	  	}
 	  	tcsetpgrp(STDOUT_FILENO,globalpgid);
 		tcsetpgrp(STDIN_FILENO,globalpgid);
+		//Add main() here to direct the handler to return to main() after handler execution is finished
+		//because if we run the handler in gdb we can see that it prints that it does not know where to go.
+		//But if we add main() here the handler works flawless but only for 1 time . After the handler isnt being
+		//called its being ignored dont know why?
 }
 
 //SIGCHLD handler
