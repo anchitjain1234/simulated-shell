@@ -148,12 +148,13 @@ int main(int argc, char const *argv[])
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, sigchldhandler);
 	signal(SIGQUIT,quithandler);
-	printf("\n\nUsage :-\n");
+	printf("\n\nUsage\n");
 	printf("jobs :- List background jobs\n");
 	printf("start pid :- Start job with pid\n");
 	printf("stop pid :- Stop job with pid\n");
 	printf("quit :- Quit the program\n");
 	printf("Ctrl + \\ :- Kill all processes\n\n");
+	printf("Note :- Pressing Ctrl + Z when a foreground process is running stops that foregorund process but the program hangs after it.\n\n");
 	while(1)
 	{
 		signal(SIGTSTP, SIG_IGN);
