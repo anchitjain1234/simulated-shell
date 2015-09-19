@@ -97,6 +97,8 @@ void sigchldhandler(int sig)
 			}
 		}
 	}
+	tcsetpgrp(STDOUT_FILENO,globalpgid);
+	tcsetpgrp(STDIN_FILENO,globalpgid);
 }
 
 //To check if ampersand is present in back of entered command or not.
