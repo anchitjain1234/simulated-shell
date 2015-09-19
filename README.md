@@ -2,7 +2,7 @@
 
 Basic simulation of mainly **job control**.  
 
-Usage
+Usage  
 1. Type ```jobs ``` to view all the background jobs *(running as well as stopped)*.
 2. Type ```start x ``` where x is the pid of the stopped background job which you want to run in background.
 3. Type ```stop x ``` where x is the pid of the running background job which you want to stop in background.
