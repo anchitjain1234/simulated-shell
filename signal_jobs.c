@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-// To keep track of length ofprocesses data structure.
+//To keep track of length ofprocesses data structure.
 int pid_counter = -1;
 
 pid_t globalpid;
